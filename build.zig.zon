@@ -10,8 +10,8 @@
         },
         .picotool = .{
             .lazy = true,
-            .url = "git+https://github.com/raspberrypi/picotool.git#bf33c6ddd756c3961c7a13b000859b71e825ee74",
-            .hash = "122034264539796c95c465222e43e734c7037e9b7e7019ba5f3699b12a7d70aa456a",
+            .url = "git+https://github.com/dasimmet/picotool.git#8aa98ce6906ef910398b57d2dfa4d9f85238370a",
+            .hash = "122071e1ba857e67739c7e737c413e5d2e3ccb13cb9bdc28a1adc682d8c80e7d8178",
         },
         .libusb = .{
             .url = "git+https://github.com/dasimmet/libusb.git#a85ed9ab315ed678b9fa37d47a9f0c0759f7352f",
