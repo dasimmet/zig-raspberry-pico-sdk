@@ -1,5 +1,8 @@
 # raspberry pico-sdk on the zig buildsystem
 
+
+The last zig version i built against (ubuntu linux 24.04 x86_64):
+
 ```console
 foo@bar:~$ zig version
 0.14.0-dev.2164+6b2c8fc68

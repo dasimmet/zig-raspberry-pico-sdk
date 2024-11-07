@@ -52,7 +52,7 @@ pub fn build(b: *std.Build) void {
         const rp2350_h = rp2350_rom.addOutputFileArg("rp2350.rom.h");
         const rp2350_rom_install = b.addInstallFile(
             rp2350_h,
-            "rp2350.rom.h",
+            "include/rp2350.rom.h",
         );
         const generate_headers = b.step("generate_headers", "");
         generate_headers.dependOn(&rp2350_rom_install.step);
@@ -63,7 +63,7 @@ pub fn build(b: *std.Build) void {
         const xip_ram_perms_elf_h = xip_ram_perms_elf.addOutputFileArg("xip_ram_perms_elf.h");
         const xip_ram_perms_elf_install = b.addInstallFile(
             xip_ram_perms_elf_h,
-            "xip_ram_perms_elf.h",
+            "include/xip_ram_perms_elf.h",
         );
         generate_headers.dependOn(&xip_ram_perms_elf_install.step);
 
