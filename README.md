@@ -59,3 +59,16 @@ COMMANDS:
 
 Use "picotool help <cmd>" for more info
 ```
+
+## Picotool zig build interface
+
+```zig
+// build.zig
+const pico_sdk = @import("zig-raspberry-pico-sdk");
+const load_step = pico_sdk.load(b, .{
+    .firmware = lazypath_to_firmware_uf2,
+    .execute = true,
+    .sudo = b.option(bool, "load-with-sudo", "run picotool load with sudo") orelse false,
+}, .{});
+b.step("load").dependOn(load_step);
+```
