@@ -1,0 +1,44 @@
+.{
+    // This is the default name used by packages depending on this one. For
+    // example, when a user runs `zig fetch --save <url>`, this field is used
+    // as the key in the `dependencies` table. Although the user can choose a
+    // different name, most users will stick with this provided value.
+    //
+    // It is redundant to include "zig" in this name because it is already
+    // within the Zig package namespace.
+    .name = "pico-sdk",
+
+    // This is a [Semantic Version](https://semver.org/).
+    // In a future version of Zig it will be used for package deduplication.
+    .version = "0.0.0",
+
+    // This field is optional.
+    // This is currently advisory only; Zig does not yet do anything
+    // with this value.
+    //.minimum_zig_version = "0.11.0",
+
+    // This field is optional.
+    // Each dependency must either provide a `url` and `hash`, or a `path`.
+    // `zig build --fetch` can be used to fetch all dependencies of a package, recursively.
+    // Once all dependencies are fetched, `zig build` no longer requires
+    // internet connectivity.
+    .dependencies = .{
+        .@"pico-sdk" = .{
+            .url = "git+https://github.com/raspberrypi/pico-sdk.git#efe2103f9b28458a1615ff096054479743ade236",
+            .hash = "1220401dd29d6777bac8f8836ede1900b7f241aa44fe69addf2434b16b51d895b6d3",
+        },
+        .picotool = .{
+            .lazy = true,
+            .url = "git+https://github.com/raspberrypi/picotool.git#bf33c6ddd756c3961c7a13b000859b71e825ee74",
+            .hash = "122034264539796c95c465222e43e734c7037e9b7e7019ba5f3699b12a7d70aa456a",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        // For example...
+        //"LICENSE",
+        "README.md",
+    },
+}
