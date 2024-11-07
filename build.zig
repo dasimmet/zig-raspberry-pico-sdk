@@ -2,8 +2,11 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) void {
+    const run_step = b.step("run", "run picotool");
+
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+
     const sdk_module = b.addModule("sdk", .{
         .root_source_file = b.path("src/sdk.zig"),
         .target = target,
@@ -42,6 +45,7 @@ pub fn build(b: *std.Build) void {
         picotool.addCSourceFiles(.{
             .files = &.{
                 "main.cpp",
+                "otp.cpp",
                 "bintool/bintool.cpp",
                 "errors/errors.cpp",
                 "elf/elf_file.cpp",
@@ -60,6 +64,8 @@ pub fn build(b: *std.Build) void {
             "elf2uf2",
             "errors",
             "lib/nlohmann_json/single_include",
+            "lib/whereami",
+            "otp_header_parser",
             "picoboot_connection",
         }) |include_path| {
             const picotool_path = picotool_src.path(include_path);
@@ -87,5 +93,11 @@ pub fn build(b: *std.Build) void {
         }
         picotool.linkLibrary(elf2uf2);
         b.installArtifact(picotool);
+
+        const run_picotool = b.addRunArtifact(picotool);
+        if (b.args) |args| {
+            run_picotool.addArgs(args);
+        }
+        run_step.dependOn(&run_picotool.step);
     }
 }
