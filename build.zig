@@ -1,6 +1,30 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+pub const FlashOptions = struct {
+    firmware: std.Build.LazyPath,
+    force: bool = false,
+    execute: bool = false,
+    sudo: bool = false,
+};
+pub fn load(b: *std.Build, opt: FlashOptions, args: anytype) *std.Build.Step.Run {
+    const this_dep = b.dependencyFromBuildZig(@This(), args);
+    const flash_step = std.Build.Step.Run.create(b, "picotool");
+    if (opt.sudo) {
+        flash_step.addArg("sudo");
+    }
+    flash_step.addFileArg(this_dep.artifact("picotool"));
+    flash_step.addArg("load");
+    if (opt.force) {
+        flash_step.addArg("--force");
+    }
+    if (opt.execute) {
+        flash_step.addArg("--execute");
+    }
+    flash_step.addFileArg(opt.firmware);
+    return flash_step;
+}
+
 pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "run picotool");
 
@@ -153,11 +177,18 @@ pub fn build(b: *std.Build) void {
         }
         picotool.linkLibrary(elf2uf2);
         b.installArtifact(picotool);
+        picotool.linkSystemLibrary("udev");
 
         const run_picotool = b.addRunArtifact(picotool);
         if (b.args) |args| {
             run_picotool.addArgs(args);
         }
         run_step.dependOn(&run_picotool.step);
+
+        const udev_rules = b.addInstallFile(
+            picotool_src.path("udev/99-picotool.rules"),
+            "udev/99-picotool.rules",
+        );
+        b.default_step.dependOn(&udev_rules.step);
     }
 }
