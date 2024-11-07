@@ -1,13 +1,21 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub const FlashOptions = struct {
+pub const LoadOptions = struct {
     firmware: std.Build.LazyPath,
+    // try rebooting into BOOTSEL before flashing
     force: bool = false,
+    // reboot into program after flashing
     execute: bool = false,
+    // use sudo if usb device is requires elevated permissions
     sudo: bool = false,
+    // device-selection
+    bus: ?[]const u8 = null,
+    address: ?[]const u8 = null,
+    vid: ?[]const u8 = null,
+    pid: ?[]const u8 = null,
 };
-pub fn load(b: *std.Build, opt: FlashOptions, args: anytype) *std.Build.Step.Run {
+pub fn load(b: *std.Build, opt: LoadOptions, args: anytype) *std.Build.Step.Run {
     const this_dep = b.dependencyFromBuildZig(@This(), args);
     const flash_step = std.Build.Step.Run.create(b, "picotool");
     if (opt.sudo) {
@@ -15,13 +23,28 @@ pub fn load(b: *std.Build, opt: FlashOptions, args: anytype) *std.Build.Step.Run
     }
     flash_step.addFileArg(this_dep.artifact("picotool"));
     flash_step.addArg("load");
+    flash_step.addFileArg(opt.firmware);
+
     if (opt.force) {
         flash_step.addArg("--force");
     }
     if (opt.execute) {
         flash_step.addArg("--execute");
     }
-    flash_step.addFileArg(opt.firmware);
+    if (opt.bus) |bus| {
+        flash_step.addArgs(&.{"--bus", bus});
+    }
+    if (opt.address) |address| {
+        flash_step.addArgs(&.{"--address", address});
+    }
+    if (opt.vid) |vid| {
+        flash_step.addArgs(&.{"--vid", vid});
+
+    }
+    if (opt.pid) |pid| {
+        flash_step.addArgs(&.{"--pid", pid});
+
+    }
     return flash_step;
 }
 
