@@ -1,5 +1,9 @@
 # raspberry pico-sdk on the zig buildsystem
 
+## Requirements
+
+- zig 0.13.0 or higher
+- nothing else
 
 The last zig version i built against (ubuntu linux 24.04 x86_64):
 
