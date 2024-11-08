@@ -5,8 +5,8 @@
     .minimum_zig_version = "0.13.0",
     .dependencies = .{
         .@"pico-sdk" = .{
-            .url = "git+https://github.com/dasimmet/pico-sdk.git#a9c6b18f83a0588c75636e48b33c3b873b8c5f0a",
-            .hash = "12209adea8c94b99fe1094e7cd78f98033381e0a3accecd72079696fb77077884da1",
+            .url = "git+https://github.com/raspberrypi/pico-sdk.git?ref=develop#6587f5cc9a91ca7fef7ccf56420d465b88d8d398",
+            .hash = "1220849c02ec7afd936bbd62b23971c1b1aeb5917421c7b9981e0b0d6dc602e0cf88",
         },
         .picotool = .{
             .lazy = true,
