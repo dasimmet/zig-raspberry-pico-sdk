@@ -208,10 +208,12 @@ pub fn build(b: *std.Build) void {
         }
         run_step.dependOn(&run_picotool.step);
 
-        const udev_rules = b.addInstallFile(
-            picotool_src.path("udev/99-picotool.rules"),
-            "udev/99-picotool.rules",
-        );
-        b.default_step.dependOn(&udev_rules.step);
+        if (target.result.os.tag == .linux) {
+            const udev_rules = b.addInstallFile(
+                picotool_src.path("udev/99-picotool.rules"),
+                "udev/99-picotool.rules",
+            );
+            b.default_step.dependOn(&udev_rules.step);
+        }
     }
 }
