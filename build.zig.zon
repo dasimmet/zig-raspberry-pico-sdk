@@ -14,9 +14,8 @@
             .hash = "12208ba01cab09b72542162f2a770b3556276988997242529a129f80805e3ff45be6",
         },
         .libusb = .{
-            .path = "../libusb",
-            // .url = "git+https://github.com/allyourcodebase/libusb.git#b113642d25c3209b428e4ef372b95bb8c73a5272",
-            // .hash = "1220536d3514be10a0b04799414c3def746fafbcc1eeacb2bc888edb022870eb81b7",
+            .url = "git+https://github.com/dasimmet/libusb.git#749a1b12c786701843db5273206d4d012f34444b",
+            .hash = "122094ff89a6d2146b10dc159a2f54faf6b08ae5dcd9b860cc502272a7148447a5bf",
         },
     },
     .paths = .{
