@@ -79,6 +79,7 @@ pub fn build(b: *std.Build) void {
             "optimize-libusb",
             "optimize mode for libusb, defaults to ReleaseFast",
         ) orelse .ReleaseFast,
+        .@"system-libudev" = false,
     });
     const binh = b.addExecutable(.{
         .name = "binh",
