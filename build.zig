@@ -94,7 +94,10 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     })) |picotool_src| {
-        const generate_headers = b.step("generate_headers", "");
+        const generate_headers = b.step(
+            "generate_headers",
+            "install the generated binh headers",
+        );
         const rp2350_h = generate_header(
             b,
             binh,
