@@ -123,6 +123,19 @@ pub fn build(b: *std.Build) void {
             "include/xip_ram_perms_elf.h",
         ).step);
 
+        const flash_id_bin_h = generate_header(
+            b,
+            binh,
+            picotool_src.path("picoboot_flash_id/flash_id.bin"),
+            "flash_id_bin",
+            "flash_id_bin.h",
+        );
+        generate_headers.dependOn(&b.addInstallFile(
+            flash_id_bin_h,
+            "include/flash_id_bin.h",
+        ).step);
+        
+
         const data_locs = b.addConfigHeader(.{
             .style = .{ .cmake = picotool_src.path("data_locs.template.cpp") },
             .include_path = "data_locs.cpp",
@@ -205,6 +218,7 @@ pub fn build(b: *std.Build) void {
 
         picotool.addIncludePath(rp2350_h.dirname());
         picotool.addIncludePath(xip_ram_perms_elf_h.dirname());
+        picotool.addIncludePath(flash_id_bin_h.dirname());
 
         inline for (.{
             "",
@@ -228,7 +242,7 @@ pub fn build(b: *std.Build) void {
             "src/common/pico_binary_info/include",
             "src/common/pico_usb_reset_interface_headers/include",
             "src/host/pico_platform/include",
-            "src/rp2_common/pico_bootrom/include",
+            "src/rp2_common/boot_bootrom_headers/include",
             "src/rp2_common/pico_stdio_usb/include",
             "src/rp2350/hardware_regs/include",
         }) |include_path| {
@@ -257,7 +271,7 @@ pub const cppflags = .{
 
 pub const cflags = .{
     "-std=c23",
-    "-pedantic",
+    // "-pedantic",
 } ++ commonflags;
 
 pub const commonflags = .{
@@ -267,6 +281,7 @@ pub const commonflags = .{
     "-Wextra",
     "-g",
     "-Werror",
+    "-Wno-delete-non-abstract-non-virtual-dtor",
     "-Wno-enum-enum-conversion",
     "-Wno-format",
     "-Wno-newline-eof",

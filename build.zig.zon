@@ -5,13 +5,13 @@
     .minimum_zig_version = "0.13.0",
     .dependencies = .{
         .@"pico-sdk" = .{
-            .url = "git+https://github.com/dasimmet/pico-sdk.git#c4ff19ba24eb070aa9fac18e36f3e64b9ec42c03",
-            .hash = "1220cf55c3da3224d8ba93ea04f068b4ecef84cf354343d3b8d3042bc28cce0c1791",
+            .url = "git+https://github.com/dasimmet/pico-sdk.git#a9c6b18f83a0588c75636e48b33c3b873b8c5f0a",
+            .hash = "12209adea8c94b99fe1094e7cd78f98033381e0a3accecd72079696fb77077884da1",
         },
         .picotool = .{
             .lazy = true,
-            .url = "git+https://github.com/dasimmet/picotool.git#104ef9621cd5cebd85e4af6bef0c1d2aea13414a",
-            .hash = "12208ba01cab09b72542162f2a770b3556276988997242529a129f80805e3ff45be6",
+            .url = "git+https://github.com/dasimmet/picotool.git#74991133ec541f82b97e07edb3e67565b56486c5",
+            .hash = "1220302e10162420d9946d40c0c11f3cf3ad628bac45d052956928e8da68d61d3995",
         },
         .libusb = .{
             .url = "git+https://github.com/dasimmet/libusb.git#749a1b12c786701843db5273206d4d012f34444b",
