@@ -86,7 +86,9 @@ pub fn build(b: *std.Build) void {
         .target = b.host,
         .optimize = optimize,
     });
-    b.installArtifact(binh);
+    b.step("binh", "install binh binary").dependOn(
+        &b.addInstallArtifact(binh, .{}).step,
+    );
 
     if (b.lazyDependency("picotool", .{
         .target = target,
@@ -237,13 +239,11 @@ pub fn build(b: *std.Build) void {
         }
         run_step.dependOn(&run_picotool.step);
 
-        if (target.result.os.tag == .linux) {
-            const udev_rules = b.addInstallFile(
-                picotool_src.path("udev/99-picotool.rules"),
-                "udev/99-picotool.rules",
-            );
-            b.default_step.dependOn(&udev_rules.step);
-        }
+        const udev_rules = b.addInstallFile(
+            picotool_src.path("udev/99-picotool.rules"),
+            "etc/udev/rules.d/99-picotool.rules",
+        );
+        b.step("udev", "install the raspberry udev rules").dependOn(&udev_rules.step);
     }
 }
 
@@ -275,7 +275,13 @@ pub const commonflags = .{
     "-Wno-zero-length-array",
 };
 
-pub fn generate_header(b: *std.Build, binh: *std.Build.Step.Compile, input: std.Build.LazyPath, name: []const u8, out_basename: []const u8) std.Build.LazyPath {
+pub fn generate_header(
+    b: *std.Build,
+    binh: *std.Build.Step.Compile,
+    input: std.Build.LazyPath,
+    name: []const u8,
+    out_basename: []const u8,
+) std.Build.LazyPath {
     const run_step = b.addRunArtifact(binh);
     run_step.addFileArg(input);
     run_step.addArg(name);
