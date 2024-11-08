@@ -1,13 +1,13 @@
 const std = @import("std");
 
-const usage = 
-\\
-\\converts a binfile to a C .h file with a bytestring const literal and length
-\\usage: binh <binfile> <name> <output>
-\\binfile: any input binary file
-\\name: name of the literal. The length will be named <name>_SIZE
-\\
-\\
+const usage =
+    \\
+    \\converts a binfile to a C .h file with a bytestring const literal and length
+    \\usage: binh <binfile> <name> <output>
+    \\binfile: any input binary file
+    \\name: name of the literal. The length will be named <name>_SIZE
+    \\
+    \\
 ;
 
 pub fn main() !void {
@@ -22,7 +22,7 @@ pub fn main() !void {
         _ = try stderr.write(usage);
         return error.Needs3ArgumentsExact;
     }
-    const file = try std.fs.cwd().openFile( args[1], .{});
+    const file = try std.fs.cwd().openFile(args[1], .{});
     defer file.close();
 
     var output = try std.fs.cwd().createFile(args[3], .{});
@@ -59,7 +59,7 @@ const template_pre =
     \\
 ;
 
-const template_post = 
+const template_post =
     \\}};
     \\const size_t {s}_SIZE = {d};
     \\

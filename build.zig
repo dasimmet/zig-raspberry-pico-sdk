@@ -32,18 +32,16 @@ pub fn load(b: *std.Build, opt: LoadOptions, args: anytype) *std.Build.Step.Run 
         flash_step.addArg("--execute");
     }
     if (opt.bus) |bus| {
-        flash_step.addArgs(&.{"--bus", bus});
+        flash_step.addArgs(&.{ "--bus", bus });
     }
     if (opt.address) |address| {
-        flash_step.addArgs(&.{"--address", address});
+        flash_step.addArgs(&.{ "--address", address });
     }
     if (opt.vid) |vid| {
-        flash_step.addArgs(&.{"--vid", vid});
-
+        flash_step.addArgs(&.{ "--vid", vid });
     }
     if (opt.pid) |pid| {
-        flash_step.addArgs(&.{"--pid", pid});
-
+        flash_step.addArgs(&.{ "--pid", pid });
     }
     return flash_step;
 }
@@ -69,6 +67,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     _ = sdk_module;
+
     const pico_sdk = b.dependency("pico-sdk", .{
         .target = target,
         .optimize = optimize,
@@ -93,26 +92,30 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     })) |picotool_src| {
-        const rp2350_rom = b.addRunArtifact(binh);
-        rp2350_rom.addFileArg(picotool_src.path("bootrom.end.bin"));
-        rp2350_rom.addArg("rp2350_rom");
-        const rp2350_h = rp2350_rom.addOutputFileArg("rp2350.rom.h");
-        const rp2350_rom_install = b.addInstallFile(
+        const generate_headers = b.step("generate_headers", "");
+        const rp2350_h = generate_header(
+            b,
+            binh,
+            picotool_src.path("bootrom.end.bin"),
+            "rp2350_rom",
+            "rp2350.rom.h",
+        );
+        generate_headers.dependOn(&b.addInstallFile(
             rp2350_h,
             "include/rp2350.rom.h",
-        );
-        const generate_headers = b.step("generate_headers", "");
-        generate_headers.dependOn(&rp2350_rom_install.step);
+        ).step);
 
-        const xip_ram_perms_elf = b.addRunArtifact(binh);
-        xip_ram_perms_elf.addFileArg(picotool_src.path("xip_ram_perms/xip_ram_perms.elf"));
-        xip_ram_perms_elf.addArg("xip_ram_perms_elf");
-        const xip_ram_perms_elf_h = xip_ram_perms_elf.addOutputFileArg("xip_ram_perms_elf.h");
-        const xip_ram_perms_elf_install = b.addInstallFile(
+        const xip_ram_perms_elf_h = generate_header(
+            b,
+            binh,
+            picotool_src.path("xip_ram_perms/xip_ram_perms.elf"),
+            "xip_ram_perms_elf",
+            "xip_ram_perms_elf.h",
+        );
+        generate_headers.dependOn(&b.addInstallFile(
             xip_ram_perms_elf_h,
             "include/xip_ram_perms_elf.h",
-        );
-        generate_headers.dependOn(&xip_ram_perms_elf_install.step);
+        ).step);
 
         const data_locs = b.addConfigHeader(.{
             .style = .{ .cmake = picotool_src.path("data_locs.template.cpp") },
@@ -121,6 +124,7 @@ pub fn build(b: *std.Build) void {
             .DATA_LOCS_VEC = "",
         });
 
+        //elf2uf2
         const elf2uf2 = b.addStaticLibrary(.{
             .name = "elf2uf2",
             .target = target,
@@ -130,17 +134,34 @@ pub fn build(b: *std.Build) void {
         elf2uf2.addCSourceFiles(.{
             .files = &.{"elf2uf2.cpp"},
             .root = picotool_src.path("elf2uf2"),
+            .flags = &cppflags,
         });
-        elf2uf2.addIncludePath(picotool_src.path("elf2uf2"));
 
+        inline for (.{
+            "elf",
+            "errors",
+        }) |include_path| {
+            const picotool_path = picotool_src.path(include_path);
+            elf2uf2.addIncludePath(picotool_path);
+        }
+        inline for (.{
+            "src/common/boot_uf2_headers/include",
+        }) |include_path| {
+            const pico_sdk_path = pico_sdk.path(include_path);
+            elf2uf2.addIncludePath(pico_sdk_path);
+        }
+
+        //picotool
         const picotool = b.addExecutable(.{
             .name = "picotool",
             .target = target,
             .optimize = optimize,
         });
-        // picotool.linkLibC();
         picotool.linkLibCpp();
-        picotool.addCSourceFile(.{ .file = data_locs.getOutput() });
+        picotool.addCSourceFile(.{
+            .file = data_locs.getOutput(),
+            .flags = &cppflags,
+        });
         picotool.addCSourceFiles(.{
             .files = &.{
                 "main.cpp",
@@ -151,19 +172,34 @@ pub fn build(b: *std.Build) void {
                 "errors/errors.cpp",
                 "lib/whereami/whereami++.cpp",
                 "picoboot_connection/picoboot_connection_cxx.cpp",
+            },
+            .root = picotool_src.path(""),
+            .flags = &cppflags,
+        });
+        picotool.addCSourceFiles(.{
+            .files = &.{
                 "picoboot_connection/picoboot_connection.c",
             },
             .root = picotool_src.path(""),
+            .flags = &cflags,
         });
-        picotool.defineCMacro("SYSTEM_VERSION", "\"2.0.0\"");
-        picotool.defineCMacro("PICOTOOL_VERSION", "\"2.0.0\"");
-        picotool.defineCMacro("COMPILER_INFO", "\"zig-" ++ builtin.zig_version_string ++ "\"");
+
+        inline for (.{
+            .{ "SYSTEM_VERSION", "\"2.0.0\"" },
+            .{ "PICOTOOL_VERSION", "\"2.0.0\"" },
+            .{ "COMPILER_INFO", "\"zig-" ++ builtin.zig_version_string ++ "\"" },
+            .{ "_CLANG_DISABLE_CRT_DEPRECATION_WARNINGS", "1" },
+        }) |macro| {
+            picotool.defineCMacro(macro[0], macro[1]);
+        }
+
         picotool.defineCMacro("HAS_LIBUSB", "1");
         picotool.linkLibrary(libusb.artifact("usb"));
+        picotool.linkLibrary(elf2uf2);
+
         picotool.addIncludePath(rp2350_h.dirname());
         picotool.addIncludePath(xip_ram_perms_elf_h.dirname());
-        // picotool.root_module.addImport("sdk", sdk_module);
-        // picotool.linkSystemLibrary("algorithm");
+
         inline for (.{
             "",
             "bintool",
@@ -176,13 +212,9 @@ pub fn build(b: *std.Build) void {
             "picoboot_connection",
         }) |include_path| {
             const picotool_path = picotool_src.path(include_path);
-            elf2uf2.addIncludePath(picotool_path);
             picotool.addIncludePath(picotool_path);
         }
-        // picotool.addIncludePath(picotool_src.path(""));
-        // picotool.addIncludePath(picotool_src.path("elf"));
-        // picotool.addIncludePath(picotool_src.path("bintool"));
-        // picotool.addIncludePath(picotool_src.path("picoboot_connection"));
+
         inline for (.{
             "src/common/boot_picobin_headers/include",
             "src/common/boot_picoboot_headers/include",
@@ -195,12 +227,9 @@ pub fn build(b: *std.Build) void {
             "src/rp2350/hardware_regs/include",
         }) |include_path| {
             const pico_sdk_path = pico_sdk.path(include_path);
-            elf2uf2.addIncludePath(pico_sdk_path);
             picotool.addIncludePath(pico_sdk_path);
         }
-        picotool.linkLibrary(elf2uf2);
         b.installArtifact(picotool);
-        picotool.linkSystemLibrary("udev");
 
         const run_picotool = b.addRunArtifact(picotool);
         if (b.args) |args| {
@@ -216,4 +245,39 @@ pub fn build(b: *std.Build) void {
             b.default_step.dependOn(&udev_rules.step);
         }
     }
+}
+
+pub const cppflags = .{
+    "-std=c++23",
+} ++ commonflags;
+
+pub const cflags = .{
+    "-std=c23",
+    "-pedantic",
+} ++ commonflags;
+
+pub const commonflags = .{
+    "-fsanitize=undefined",
+    "-fsanitize=bounds",
+    "-Wall",
+    "-Wextra",
+    "-g",
+    "-Werror",
+    "-Wno-enum-enum-conversion",
+    "-Wno-format",
+    "-Wno-newline-eof",
+    "-Wno-sign-compare",
+    "-Wno-unused-but-set-variable",
+    "-Wno-unused-const-variable",
+    "-Wno-unused-function",
+    "-Wno-unused-parameter",
+    "-Wno-unused-variable",
+    "-Wno-zero-length-array",
+};
+
+pub fn generate_header(b: *std.Build, binh: *std.Build.Step.Compile, input: std.Build.LazyPath, name: []const u8, out_basename: []const u8) std.Build.LazyPath {
+    const run_step = b.addRunArtifact(binh);
+    run_step.addFileArg(input);
+    run_step.addArg(name);
+    return run_step.addOutputFileArg(out_basename);
 }
