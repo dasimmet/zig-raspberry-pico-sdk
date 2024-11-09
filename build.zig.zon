@@ -14,7 +14,7 @@
             .hash = "1220302e10162420d9946d40c0c11f3cf3ad628bac45d052956928e8da68d61d3995",
         },
         .libusb = .{
-            .url = "git+https://github.com/dasimmet/libusb.git#749a1b12c786701843db5273206d4d012f34444b",
+            .url = "git+https://github.com/allyourcodebase/libusb.git#d9bc1457b0d3cc5c39a4dc845d6974f52dac2dea",
             .hash = "122094ff89a6d2146b10dc159a2f54faf6b08ae5dcd9b860cc502272a7148447a5bf",
         },
     },
