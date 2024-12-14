@@ -2,6 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 pub const LoadOptions = struct {
+    // firmware file to load
     firmware: std.Build.LazyPath,
     // try rebooting into BOOTSEL before flashing
     force: bool = false,
@@ -15,6 +16,8 @@ pub const LoadOptions = struct {
     vid: ?[]const u8 = null,
     pid: ?[]const u8 = null,
 };
+
+// load a firmware file to the default raspi pico found connected on usb
 pub fn load(b: *std.Build, opt: LoadOptions, args: anytype) *std.Build.Step.Run {
     const this_dep = b.dependencyFromBuildZig(@This(), args);
     const flash_step = std.Build.Step.Run.create(b, "picotool");
@@ -286,6 +289,7 @@ pub const commonflags = .{
     "-Wno-format",
     "-Wno-newline-eof",
     "-Wno-sign-compare",
+    "-Wno-unsequenced",
     "-Wno-unused-but-set-variable",
     "-Wno-unused-const-variable",
     "-Wno-unused-function",
