@@ -5,13 +5,13 @@
     .minimum_zig_version = "0.15.0-dev.1593+399bace2f",
     .dependencies = .{
         .@"pico-sdk" = .{
-            .url = "git+https://github.com/raspberrypi/pico-sdk.git#95ea6acad131124694cda1c162c52cd30e0aece0",
-            .hash = "122010b645943ea8b2c0e907afca5d0ce6ef43268def7788371464ecd77ee99605f3",
+            .url = "git+https://github.com/raspberrypi/pico-sdk.git?ref=2.2.0#a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+            .hash = "N-V-__8AAJZDcwFLNdIEF1wutjiH14f8fSET5jNORZIZKCaM",
         },
         .picotool = .{
             .lazy = true,
-            .url = "git+https://github.com/raspberrypi/picotool.git#df21059f7ca6f1babc7f1f3b92122cacffc85951",
-            .hash = "12201c91029f46eea5b876ee361980bc371ecb98d0d4fc354f99cbec2db61acd9911",
+            .url = "git+https://github.com/raspberrypi/picotool.git?ref=2.2.0-a4#25aa087b2c517b4901874a99536e869d4d27b678",
+            .hash = "N-V-__8AACmfQwA3qa6G5rHENHJ6SLwK_SrQPQMxFoYzKWnd",
         },
         .libusb = .{
             .url = "git+https://github.com/dasimmet/libusb.git?ref=zig-master#884ebcca416fa8170a07ede3e035818c032540df",

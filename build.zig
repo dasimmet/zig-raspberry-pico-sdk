@@ -104,18 +104,6 @@ pub fn build(b: *std.Build) void {
             "generate_headers",
             "install the generated binh headers",
         );
-        const rp2350_h = generate_header(
-            b,
-            binh,
-            picotool_src.path("bootrom.end.bin"),
-            "rp2350_rom",
-            "rp2350.rom.h",
-        );
-        generate_headers.dependOn(&b.addInstallFile(
-            rp2350_h,
-            "include/rp2350.rom.h",
-        ).step);
-
         const xip_ram_perms_elf_h = generate_header(
             b,
             binh,
@@ -165,12 +153,15 @@ pub fn build(b: *std.Build) void {
         inline for (.{
             "elf",
             "errors",
+            "model",
         }) |include_path| {
             const picotool_path = picotool_src.path(include_path);
             elf2uf2.addIncludePath(picotool_path);
         }
         inline for (.{
+            "src/common/boot_picoboot_headers/include",
             "src/common/boot_uf2_headers/include",
+            "src/host/pico_platform/include",
         }) |include_path| {
             const pico_sdk_path = pico_sdk.path(include_path);
             elf2uf2.addIncludePath(pico_sdk_path);
@@ -192,8 +183,9 @@ pub fn build(b: *std.Build) void {
         picotool.addCSourceFiles(.{
             .files = &.{
                 "main.cpp",
+                "model/model.cpp",
                 "otp.cpp",
-                "xip_ram_perms.cpp",
+                "get_xip_ram_perms.cpp",
                 "bintool/bintool.cpp",
                 "elf/elf_file.cpp",
                 "errors/errors.cpp",
@@ -212,8 +204,8 @@ pub fn build(b: *std.Build) void {
         });
 
         inline for (.{
-            .{ "SYSTEM_VERSION", "\"2.0.0\"" },
-            .{ "PICOTOOL_VERSION", "\"2.0.0\"" },
+            .{ "SYSTEM_VERSION", "\"2.2.0\"" },
+            .{ "PICOTOOL_VERSION", "\"2.2.0-a4\"" },
             .{ "COMPILER_INFO", "\"zig-" ++ builtin.zig_version_string ++ "\"" },
             .{ "_CLANG_DISABLE_CRT_DEPRECATION_WARNINGS", "1" },
         }) |macro| {
@@ -224,7 +216,26 @@ pub fn build(b: *std.Build) void {
         picotool.linkLibrary(libusb.artifact("usb"));
         picotool.linkLibrary(elf2uf2);
 
-        picotool.addIncludePath(rp2350_h.dirname());
+        inline for (&.{
+            "rp2350_a2_rom_end",
+            "rp2350_a3_rom_end",
+            "rp2350_a4_rom_end",
+        }) |bin_h_name| {
+            const rp2350_h = generate_header(
+                b,
+                binh,
+                picotool_src.path("model/" ++ bin_h_name ++ ".bin"),
+                bin_h_name,
+                bin_h_name ++ ".h",
+            );
+            generate_headers.dependOn(&b.addInstallFile(
+                rp2350_h,
+                "include/rp2350.rom.h",
+            ).step);
+            picotool.addIncludePath(rp2350_h.dirname());
+            elf2uf2.addIncludePath(rp2350_h.dirname());
+        }
+
         picotool.addIncludePath(xip_ram_perms_elf_h.dirname());
         picotool.addIncludePath(flash_id_bin_h.dirname());
 
@@ -236,6 +247,7 @@ pub fn build(b: *std.Build) void {
             "errors",
             "lib/nlohmann_json/single_include",
             "lib/whereami",
+            "model",
             "otp_header_parser",
             "picoboot_connection",
         }) |include_path| {
@@ -294,6 +306,7 @@ pub const commonflags = .{
     "-Wno-enum-enum-conversion",
     "-Wno-format",
     "-Wno-newline-eof",
+    "-Wno-reorder",
     "-Wno-sign-compare",
     "-Wno-unsequenced",
     "-Wno-unused-but-set-variable",
