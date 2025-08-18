@@ -9,7 +9,7 @@ The last zig version i built against (ubuntu linux 24.04 x86_64):
 
 ```console
 foo@bar:~$ zig version
-0.14.0-dev.2164+6b2c8fc68
+0.15.0-dev.1593+399bace2f
 ```
 
 ## Picotool
