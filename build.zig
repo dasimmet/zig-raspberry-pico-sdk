@@ -269,7 +269,18 @@ pub fn build(b: *std.Build) void {
             const pico_sdk_path = pico_sdk.path(include_path);
             picotool.addIncludePath(pico_sdk_path);
         }
-        b.installArtifact(picotool);
+        if (b.option(bool, "ci", "ci artifact naming") orelse false) {
+            const picotool_name = b.fmt(
+                "picotool-{s}",
+                .{target.result.zigTriple(b.allocator) catch unreachable},
+            );
+            b.getInstallStep().dependOn(&b.addInstallBinFile(
+                picotool.getEmittedBin(),
+                picotool_name,
+            ).step);
+        } else {
+            b.installArtifact(picotool);
+        }
 
         const run_picotool = b.addRunArtifact(picotool);
         if (b.args) |args| {
@@ -278,9 +289,10 @@ pub fn build(b: *std.Build) void {
         run_step.dependOn(&run_picotool.step);
 
         const udev_rules = b.addInstallFile(
-            picotool_src.path("udev/99-picotool.rules"),
-            "etc/udev/rules.d/99-picotool.rules",
+            picotool_src.path("udev/60-picotool.rules"),
+            "etc/udev/rules.d/60-picotool.rules",
         );
+        b.getInstallStep().dependOn(&udev_rules.step);
         b.step("udev", "install the raspberry udev rules").dependOn(&udev_rules.step);
     }
 }
