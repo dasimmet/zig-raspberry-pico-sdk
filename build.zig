@@ -86,9 +86,11 @@ pub fn build(b: *std.Build) void {
     });
     const binh = b.addExecutable(.{
         .name = "binh",
-        .root_source_file = b.path("src/binh.zig"),
-        .target = b.graph.host,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/binh.zig"),
+            .target = b.graph.host,
+            .optimize = optimize,
+        }),
     });
     b.step("binh", "install binh binary").dependOn(
         &b.addInstallArtifact(binh, .{}).step,
@@ -146,10 +148,12 @@ pub fn build(b: *std.Build) void {
         });
 
         //elf2uf2
-        const elf2uf2 = b.addStaticLibrary(.{
+        const elf2uf2 = b.addLibrary(.{
             .name = "elf2uf2",
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .target = target,
+                .optimize = optimize,
+            }),
         });
         elf2uf2.linkLibCpp();
         elf2uf2.addCSourceFiles(.{
@@ -175,8 +179,10 @@ pub fn build(b: *std.Build) void {
         //picotool
         const picotool = b.addExecutable(.{
             .name = "picotool",
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .target = target,
+                .optimize = optimize,
+            }),
         });
         picotool.linkLibCpp();
         picotool.addCSourceFile(.{

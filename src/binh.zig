@@ -16,7 +16,7 @@ pub fn main() !void {
     defer _ = gpa.deinit();
 
     const args = try std.process.argsAlloc(allocator);
-    const stderr = std.io.getStdErr();
+    const stderr = std.fs.File.stderr();
     defer std.process.argsFree(allocator, args);
     if (args.len != 4) {
         _ = try stderr.write(usage);
@@ -27,7 +27,9 @@ pub fn main() !void {
 
     var output = try std.fs.cwd().createFile(args[3], .{});
     defer output.close();
-    try output.writer().print(template_pre, .{
+    var out_buf: [1048576]u8 = undefined;
+    var out_writer = output.writer(&out_buf);
+    try out_writer.interface.print(template_pre, .{
         args[2],
     });
 
@@ -37,19 +39,20 @@ pub fn main() !void {
     while (slice.len > 0) : (slice = buf[0..try file.read(&buf)]) {
         count += slice.len;
         for (slice, 1..) |char, i| {
-            try output.writer().print(
-                "0x{}, ",
-                .{std.fmt.fmtSliceHexLower(&.{char})},
+            try out_writer.interface.print(
+                "0x{x}, ",
+                .{char},
             );
             if ((i % 16) == 0) {
-                _ = try output.write("\n");
+                _ = try out_writer.interface.write("\n");
             }
         }
     }
-    try output.writer().print(template_post, .{
+    try out_writer.interface.print(template_post, .{
         args[2],
         count,
     });
+    try out_writer.interface.flush();
 }
 
 const template_pre =
