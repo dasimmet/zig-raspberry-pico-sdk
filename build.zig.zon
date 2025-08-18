@@ -1,8 +1,8 @@
 .{
-    .name = "zig-raspberry-pico-sdk",
+    .name = .raspberry_pico_sdk,
+    .fingerprint = 0x21a55da9e3ed532b,
     .version = "0.0.1",
-
-    .minimum_zig_version = "0.13.0",
+    .minimum_zig_version = "0.14.1",
     .dependencies = .{
         .@"pico-sdk" = .{
             .url = "git+https://github.com/raspberrypi/pico-sdk.git#95ea6acad131124694cda1c162c52cd30e0aece0",
@@ -14,8 +14,8 @@
             .hash = "12201c91029f46eea5b876ee361980bc371ecb98d0d4fc354f99cbec2db61acd9911",
         },
         .libusb = .{
-            .url = "git+https://github.com/allyourcodebase/libusb.git#d9bc1457b0d3cc5c39a4dc845d6974f52dac2dea",
-            .hash = "122094ff89a6d2146b10dc159a2f54faf6b08ae5dcd9b860cc502272a7148447a5bf",
+            .url = "git+https://github.com/dasimmet/libusb.git?ref=zig-0.14.1#b56505c2486af3fc0ff74c515c8ff08d47f939b6",
+            .hash = "libusb-1.0.26-wsKPuI2NFwArUFzeUTVgBXkwxuFSzE82nT2mk_7Vmf-Q",
         },
     },
     .paths = .{

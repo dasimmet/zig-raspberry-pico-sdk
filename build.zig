@@ -87,7 +87,7 @@ pub fn build(b: *std.Build) void {
     const binh = b.addExecutable(.{
         .name = "binh",
         .root_source_file = b.path("src/binh.zig"),
-        .target = b.host,
+        .target = b.graph.host,
         .optimize = optimize,
     });
     b.step("binh", "install binh binary").dependOn(
@@ -137,7 +137,6 @@ pub fn build(b: *std.Build) void {
             flash_id_bin_h,
             "include/flash_id_bin.h",
         ).step);
-        
 
         const data_locs = b.addConfigHeader(.{
             .style = .{ .cmake = picotool_src.path("data_locs.template.cpp") },
@@ -212,10 +211,10 @@ pub fn build(b: *std.Build) void {
             .{ "COMPILER_INFO", "\"zig-" ++ builtin.zig_version_string ++ "\"" },
             .{ "_CLANG_DISABLE_CRT_DEPRECATION_WARNINGS", "1" },
         }) |macro| {
-            picotool.defineCMacro(macro[0], macro[1]);
+            picotool.root_module.addCMacro(macro[0], macro[1]);
         }
 
-        picotool.defineCMacro("HAS_LIBUSB", "1");
+        picotool.root_module.addCMacro("HAS_LIBUSB", "1");
         picotool.linkLibrary(libusb.artifact("usb"));
         picotool.linkLibrary(elf2uf2);
 
@@ -279,6 +278,7 @@ pub const cflags = .{
 
 pub const commonflags = .{
     "-fsanitize=undefined",
+    "-fsanitize-trap=undefined",
     "-fsanitize=bounds",
     "-Wall",
     "-Wextra",
