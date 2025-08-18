@@ -269,18 +269,7 @@ pub fn build(b: *std.Build) void {
             const pico_sdk_path = pico_sdk.path(include_path);
             picotool.addIncludePath(pico_sdk_path);
         }
-        if (b.option(bool, "ci", "ci artifact naming") orelse false) {
-            const picotool_name = b.fmt(
-                "picotool-{s}",
-                .{target.result.zigTriple(b.allocator) catch unreachable},
-            );
-            b.getInstallStep().dependOn(&b.addInstallBinFile(
-                picotool.getEmittedBin(),
-                picotool_name,
-            ).step);
-        } else {
-            b.installArtifact(picotool);
-        }
+        b.installArtifact(picotool);
 
         const run_picotool = b.addRunArtifact(picotool);
         if (b.args) |args| {

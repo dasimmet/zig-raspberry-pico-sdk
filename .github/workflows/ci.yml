@@ -21,7 +21,7 @@ jobs:
         uses: mlugg/setup-zig@v2.0.5
 
       - name: Run `build`
-        run: zig build -Dci -Dtarget=x86_64-linux-musl
+        run: zig build -Dtarget=x86_64-linux-musl
 
       - uses: actions/upload-artifact@v4
         with:
