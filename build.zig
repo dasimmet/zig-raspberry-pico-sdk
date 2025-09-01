@@ -1,5 +1,10 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const build_zon = @import("build.zig.zon");
+
+const pico_sdk_version = build_zon.version;
+const picotool_version = "2.2.0-a4";
+
 
 pub const LoadOptions = struct {
     // firmware file to load
@@ -204,8 +209,8 @@ pub fn build(b: *std.Build) void {
         });
 
         inline for (.{
-            .{ "SYSTEM_VERSION", "\"2.2.0\"" },
-            .{ "PICOTOOL_VERSION", "\"2.2.0-a4\"" },
+            .{ "SYSTEM_VERSION", "\"" ++ pico_sdk_version ++ "\"" },
+            .{ "PICOTOOL_VERSION", "\"" ++ picotool_version ++ "\"" },
             .{ "COMPILER_INFO", "\"zig-" ++ builtin.zig_version_string ++ "\"" },
             .{ "_CLANG_DISABLE_CRT_DEPRECATION_WARNINGS", "1" },
         }) |macro| {

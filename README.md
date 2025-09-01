@@ -2,14 +2,13 @@
 
 ## Requirements
 
-- zig 0.13.0 or higher
-- ~~libudev-dev for libusb on linux~~
+- zig 0.15.1 or higher
 
 The last zig version i built against (ubuntu linux 24.04 x86_64):
 
 ```console
 foo@bar:~$ zig version
-0.15.0-dev.1593+399bace2f
+0.15.1
 ```
 
 ## Picotool

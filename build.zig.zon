@@ -1,8 +1,8 @@
 .{
     .name = .raspberry_pico_sdk,
     .fingerprint = 0x21a55da9e3ed532b,
-    .version = "0.0.1",
-    .minimum_zig_version = "0.15.0-dev.1593+399bace2f",
+    .version = "2.2.0",
+    .minimum_zig_version = "0.15.1",
     .dependencies = .{
         .@"pico-sdk" = .{
             .url = "git+https://github.com/raspberrypi/pico-sdk.git?ref=2.2.0#a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
