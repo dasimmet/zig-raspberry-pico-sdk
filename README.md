@@ -1,4 +1,4 @@
-# raspberry pico-sdk on the zig buildsystem
+# raspberry pico-sdk and picotool on the zig buildsystem
 
 ## Requirements
 
