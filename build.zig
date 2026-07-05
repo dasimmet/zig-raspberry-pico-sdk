@@ -116,11 +116,29 @@ pub fn build(b: *std.Build) void {
             "include/flash_id_bin.h",
         ).step);
 
+        const data_locs_vec = b.fmt("{f}", .{struct {
+            src: []const u8,
+            pub fn format(self: *const @This(), w: *std.Io.Writer) !void {
+                for (self.src) |c| {
+                    if (c == ';') {
+                        @branchHint(.unlikely);
+                        try w.writeAll("\",\"");
+                        continue;
+                    }
+                    try w.writeAll(&.{c});
+                }
+            }
+        }{ .src = b.option(
+            []const u8,
+            "data-locs",
+            "semicolon separated runtime data locations",
+        ) orelse "./;/usr/local/share/picotool" }});
+
         const data_locs = b.addConfigHeader(.{
             .style = .{ .cmake = picotool_src.path("data_locs.template.cpp") },
             .include_path = "data_locs.cpp",
         }, .{
-            .DATA_LOCS_VEC = "",
+            .DATA_LOCS_VEC = data_locs_vec,
         });
 
         //elf2uf2
