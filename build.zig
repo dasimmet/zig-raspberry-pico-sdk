@@ -5,7 +5,6 @@ const build_zon = @import("build.zig.zon");
 const pico_sdk_version = build_zon.version;
 const picotool_version = "2.2.0-a4";
 
-
 pub const LoadOptions = struct {
     // firmware file to load
     firmware: std.Build.LazyPath,
@@ -59,22 +58,6 @@ pub fn build(b: *std.Build) void {
 
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-    const backup_package_sources = b.option(bool, "package_backup", "package_backup") orelse false;
-    if (backup_package_sources) {
-        const global_cache: std.Build.LazyPath = .{ .cwd_relative = b.graph.global_cache_root.path.? };
-        b.installDirectory(.{
-            .source_dir = global_cache.path(b, "p"),
-            .install_dir = .{ .custom = "packages" },
-            .install_subdir = "",
-        });
-    }
-
-    const sdk_module = b.addModule("sdk", .{
-        .root_source_file = b.path("src/sdk.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    _ = sdk_module;
 
     const pico_sdk = b.dependency("pico-sdk", .{
         .target = target,
@@ -141,14 +124,16 @@ pub fn build(b: *std.Build) void {
         });
 
         //elf2uf2
-        const elf2uf2 = b.addLibrary(.{
-            .name = "elf2uf2",
-            .root_module = b.createModule(.{
-                .target = target,
-                .optimize = optimize,
-            }),
+        const elf2uf2 = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libcpp = true,
         });
-        elf2uf2.linkLibCpp();
+        const libelf2uf2 = b.addLibrary(.{
+            .name = "elf2uf2",
+            .root_module = elf2uf2,
+        });
+
         elf2uf2.addCSourceFiles(.{
             .files = &.{"elf2uf2.cpp"},
             .root = picotool_src.path("elf2uf2"),
@@ -173,16 +158,17 @@ pub fn build(b: *std.Build) void {
         }
 
         //picotool
-        const picotool = b.addExecutable(.{
-            .name = "picotool",
-            .root_module = b.createModule(.{
-                .target = target,
-                .optimize = optimize,
-            }),
+        const picotool = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
         });
-        picotool.linkLibCpp();
+        const picotool_exe = b.addExecutable(.{
+            .name = "picotool",
+            .root_module = picotool,
+        });
+
         picotool.addCSourceFile(.{
-            .file = data_locs.getOutput(),
+            .file = data_locs.getOutputFile(),
             .flags = &cppflags,
         });
         picotool.addCSourceFiles(.{
@@ -214,12 +200,12 @@ pub fn build(b: *std.Build) void {
             .{ "COMPILER_INFO", "\"zig-" ++ builtin.zig_version_string ++ "\"" },
             .{ "_CLANG_DISABLE_CRT_DEPRECATION_WARNINGS", "1" },
         }) |macro| {
-            picotool.root_module.addCMacro(macro[0], macro[1]);
+            picotool.addCMacro(macro[0], macro[1]);
         }
 
-        picotool.root_module.addCMacro("HAS_LIBUSB", "1");
+        picotool.addCMacro("HAS_LIBUSB", "1");
         picotool.linkLibrary(libusb.artifact("usb"));
-        picotool.linkLibrary(elf2uf2);
+        picotool.linkLibrary(libelf2uf2);
 
         inline for (&.{
             "rp2350_a2_rom_end",
@@ -274,12 +260,10 @@ pub fn build(b: *std.Build) void {
             const pico_sdk_path = pico_sdk.path(include_path);
             picotool.addIncludePath(pico_sdk_path);
         }
-        b.installArtifact(picotool);
+        b.installArtifact(picotool_exe);
 
-        const run_picotool = b.addRunArtifact(picotool);
-        if (b.args) |args| {
-            run_picotool.addArgs(args);
-        }
+        const run_picotool = b.addRunArtifact(picotool_exe);
+        passthroughArgs(b, run_picotool);
         run_step.dependOn(&run_picotool.step);
 
         const udev_rules = b.addInstallFile(
@@ -334,4 +318,15 @@ pub fn generate_header(
     run_step.addFileArg(input);
     run_step.addArg(name);
     return run_step.addOutputFileArg(out_basename);
+}
+
+// zig 0.17.0 and 0.16.0 compatible args passthrough function
+inline fn passthroughArgs(b: *std.Build, run: *std.Build.Step.Run) void {
+    if (comptime @import("builtin").zig_version.order(std.SemanticVersion.parse("0.16.0") catch unreachable) == .gt) {
+        run.addPassthruArgs();
+    } else {
+        if (b.args) |args| {
+            for (args) |arg| run.addArg(arg);
+        }
+    }
 }
