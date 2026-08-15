@@ -116,23 +116,15 @@ pub fn build(b: *std.Build) void {
             "include/flash_id_bin.h",
         ).step);
 
-        const data_locs_vec = b.fmt("{f}", .{struct {
-            src: []const u8,
-            pub fn format(self: *const @This(), w: *std.Io.Writer) !void {
-                for (self.src) |c| {
-                    if (c == ';') {
-                        @branchHint(.unlikely);
-                        try w.writeAll("\",\"");
-                        continue;
-                    }
-                    try w.writeAll(&.{c});
-                }
-            }
-        }{ .src = b.option(
+        const data_locs_opt = b.option(
             []const u8,
             "data-locs",
             "semicolon separated runtime data locations",
-        ) orelse "./;/usr/local/share/picotool" }});
+        ) orelse "./;/usr/local/share/picotool";
+
+        const data_locs_vec = b.fmt("{f}", .{
+            DataLocsFmt.fmt(data_locs_opt),
+        });
 
         const data_locs = b.addConfigHeader(.{
             .style = .{ .cmake = picotool_src.path("data_locs.template.cpp") },
@@ -292,6 +284,25 @@ pub fn build(b: *std.Build) void {
         b.step("udev", "install the raspberry udev rules").dependOn(&udev_rules.step);
     }
 }
+
+pub const DataLocsFmt = struct {
+    src: []const u8,
+
+    pub fn fmt(src: []const u8) DataLocsFmt {
+        return .{ .src = src };
+    }
+
+    pub fn format(self: *const @This(), w: *std.Io.Writer) !void {
+        for (self.src) |c| {
+            if (c == ';') {
+                @branchHint(.unlikely);
+                try w.writeAll("\",\"");
+                continue;
+            }
+            try w.writeAll(&.{c});
+        }
+    }
+};
 
 pub const cppflags = .{
     "-std=c++23",
