@@ -1,16 +1,16 @@
 .{
-    .name = .raspberry_pico_sdk,
-    .fingerprint = 0x21a55da9e3ed532b,
-    .version = "2.2.0",
+    .name = .picotool,
+    .fingerprint = 0x43e93b6a456bd23e,
+    .version = "2.3.0",
     .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .@"pico-sdk" = .{
-            .url = "git+https://github.com/raspberrypi/pico-sdk.git?ref=2.2.0#a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
-            .hash = "N-V-__8AAJZDcwFLNdIEF1wutjiH14f8fSET5jNORZIZKCaM",
+            .url = "git+https://github.com/raspberrypi/pico-sdk.git?ref=2.3.0#98a542c1a62fb549ffb5d66a3e5892b06276b670",
+            .hash = "N-V-__8AACC7gQF8yOyL35E5Ah0a4BNlyEi5CAQu8MEcP7fp",
         },
         .picotool = .{
-            .url = "git+https://github.com/raspberrypi/picotool.git?ref=2.2.0-a4#25aa087b2c517b4901874a99536e869d4d27b678",
-            .hash = "N-V-__8AACmfQwA3qa6G5rHENHJ6SLwK_SrQPQMxFoYzKWnd",
+            .url = "git+https://github.com/raspberrypi/picotool.git?ref=2.3.0#6f6458d792b93685a11423b244a585eaa99eafcf",
+            .hash = "N-V-__8AAF8sbAC21vHnV5XG6uiXgA-kQYXM5MWI0Duv61Hh",
         },
         .libusb = .{
             // todo: merge https://github.com/allyourcodebase/libusb/pull/19

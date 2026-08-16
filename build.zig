@@ -3,7 +3,6 @@ const builtin = @import("builtin");
 const build_zon = @import("build.zig.zon");
 
 const pico_sdk_version = build_zon.version;
-const picotool_version = "2.2.0-a4";
 
 pub const LoadOptions = struct {
     // firmware file to load
@@ -147,6 +146,11 @@ pub fn build(b: *std.Build) void {
         .root = picotool_src.path("elf2uf2"),
         .flags = &cppflags,
     });
+    libelf2uf2.installHeadersDirectory(
+        picotool_src.path("elf2uf2"),
+        "",
+        .{},
+    );
 
     inline for (.{
         "elf",
@@ -163,6 +167,56 @@ pub fn build(b: *std.Build) void {
     }) |include_path| {
         elf2uf2.addIncludePath(pico_sdk.path(include_path));
     }
+
+    //oofatfs
+    const oofatfs = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    const liboofatfs = b.addLibrary(.{
+        .name = "oofatfs",
+        .root_module = oofatfs,
+    });
+    oofatfs.addCSourceFiles(.{
+        .root = picotool_src.path("lib/oofatfs/src"),
+        .files = &.{
+            "ff.c",
+            "ffunicode.c",
+        },
+        .flags = &cflags,
+    });
+    oofatfs.addIncludePath(picotool_src.path("lib/oofatfs/src"));
+    liboofatfs.installHeadersDirectory(
+        picotool_src.path("lib/oofatfs/src"),
+        "",
+        .{},
+    );
+
+    //littlefs
+    const littlefs = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    const liblittlefs = b.addLibrary(.{
+        .name = "littlefs",
+        .root_module = littlefs,
+    });
+    littlefs.addCSourceFiles(.{
+        .root = picotool_src.path("lib/littlefs"),
+        .files = &.{
+            "lfs.c",
+            "lfs_util.c",
+        },
+        .flags = &cflags,
+    });
+    littlefs.addIncludePath(picotool_src.path("lib/littlefs"));
+    liblittlefs.installHeadersDirectory(
+        picotool_src.path("lib/littlefs"),
+        "",
+        .{},
+    );
 
     //picotool
     const picotool = b.createModule(.{
@@ -203,7 +257,7 @@ pub fn build(b: *std.Build) void {
 
     inline for (.{
         .{ "SYSTEM_VERSION", "\"" ++ pico_sdk_version ++ "\"" },
-        .{ "PICOTOOL_VERSION", "\"" ++ picotool_version ++ "\"" },
+        .{ "PICOTOOL_VERSION", "\"" ++ pico_sdk_version ++ "\"" },
         .{ "COMPILER_INFO", "\"zig-" ++ builtin.zig_version_string ++ "\"" },
         .{ "_CLANG_DISABLE_CRT_DEPRECATION_WARNINGS", "1" },
     }) |macro| {
@@ -213,6 +267,8 @@ pub fn build(b: *std.Build) void {
     picotool.addCMacro("HAS_LIBUSB", "1");
     picotool.linkLibrary(libusb.artifact("usb"));
     picotool.linkLibrary(libelf2uf2);
+    picotool.linkLibrary(liboofatfs);
+    picotool.linkLibrary(liblittlefs);
 
     inline for (&.{
         "rp2350_a2_rom_end",
@@ -242,7 +298,6 @@ pub fn build(b: *std.Build) void {
         "",
         "bintool",
         "elf",
-        "elf2uf2",
         "errors",
         "lib/nlohmann_json/single_include",
         "lib/whereami",
@@ -250,8 +305,7 @@ pub fn build(b: *std.Build) void {
         "otp_header_parser",
         "picoboot_connection",
     }) |include_path| {
-        const picotool_path = picotool_src.path(include_path);
-        picotool.addIncludePath(picotool_path);
+        picotool.addIncludePath(picotool_src.path(include_path));
     }
 
     inline for (.{
@@ -307,7 +361,7 @@ pub const cppflags = .{
 
 pub const cflags = .{
     "-std=c23",
-    // "-pedantic",
+    "-pedantic",
 } ++ commonflags;
 
 pub const commonflags = .{
@@ -318,19 +372,20 @@ pub const commonflags = .{
     "-Wextra",
     "-g",
     "-Werror",
-    "-Wno-delete-non-abstract-non-virtual-dtor",
-    "-Wno-enum-enum-conversion",
-    "-Wno-format",
-    "-Wno-newline-eof",
-    "-Wno-reorder",
-    "-Wno-sign-compare",
-    "-Wno-unsequenced",
-    "-Wno-unused-but-set-variable",
-    "-Wno-unused-const-variable",
-    "-Wno-unused-function",
-    "-Wno-unused-parameter",
-    "-Wno-unused-variable",
-    "-Wno-zero-length-array",
+    "-Wno-error=missing-field-initializers",
+    "-Wno-error=delete-non-abstract-non-virtual-dtor",
+    "-Wno-error=enum-enum-conversion",
+    "-Wno-error=format",
+    "-Wno-error=newline-eof",
+    "-Wno-error=reorder",
+    "-Wno-error=sign-compare",
+    "-Wno-error=unsequenced",
+    "-Wno-error=unused-but-set-variable",
+    "-Wno-error=unused-const-variable",
+    "-Wno-error=unused-function",
+    "-Wno-error=unused-parameter",
+    "-Wno-error=unused-variable",
+    "-Wno-error=zero-length-array",
 };
 
 pub fn generate_binh(
