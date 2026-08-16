@@ -48,7 +48,10 @@ pub fn main(init: std.process.Init) !void {
     });
 
     var count: usize = 0;
-    while (input.takeByte() catch null) |char| : (count += 1) {
+    while (input.takeByte() catch |err| switch (err) {
+        error.EndOfStream => null,
+        else => return err,
+    }) |char| : (count += 1) {
         if ((count % 16) == 0) {
             try output.writeAll("\n    ");
         }
