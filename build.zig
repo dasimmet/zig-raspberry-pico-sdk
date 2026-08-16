@@ -58,24 +58,79 @@ pub fn load(b: *Build, opt: LoadOptions, args: anytype) *Run {
 }
 
 pub fn build(b: *Build) void {
-    const run_step = b.step("run", "run picotool");
-
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const pico_sdk = b.dependency("pico-sdk", .{
-        .target = target,
-        .optimize = optimize,
-    });
+    const data_locs = b.option(
+        []const u8,
+        "data-locs",
+        "semicolon separated runtime data locations",
+    ) orelse "./;/usr/local/share/picotool";
+
+    const ci_step = b.step("ci", "build picotool for ci targets");
+
+    const picotool_src = b.dependency("picotool", .{});
+    const udev_rules = b.addInstallFile(
+        picotool_src.path("udev/60-picotool.rules"),
+        "etc/udev/rules.d/60-picotool.rules",
+    );
+    b.getInstallStep().dependOn(&udev_rules.step);
+    ci_step.dependOn(&udev_rules.step);
+    b.step("udev", "install the raspberry udev rules").dependOn(&udev_rules.step);
+
+    const picotool_exe = buildWithOptions(
+        b,
+        target,
+        optimize,
+        data_locs,
+        true,
+    );
+    b.installArtifact(picotool_exe);
+
+    const run_picotool = b.addRunArtifact(picotool_exe);
+    passthroughArgs(b, run_picotool);
+    const run_step = b.step("run", "run picotool");
+    run_step.dependOn(&run_picotool.step);
+
+    inline for (&.{
+        "x86_64-linux-gnu",
+        "x86_64-linux-musl",
+        "aarch64-linux-gnu",
+        "aarch64-linux-musl",
+        "x86_64-windows-gnu",
+        "aarch64-windows-gnu",
+    }) |target_str| {
+        const ci_target = b.resolveTargetQuery(std.Target.Query.parse(.{ .arch_os_abi = target_str }) catch unreachable);
+        const exe = buildWithOptions(
+            b,
+            ci_target,
+            optimize,
+            data_locs,
+            false,
+        );
+        const ci_install = b.addInstallArtifact(exe, .{
+            .dest_dir = .{ .override = .{ .custom = "bin/" ++ target_str } },
+        });
+
+        ci_step.dependOn(&ci_install.step);
+    }
+}
+
+fn buildWithOptions(
+    b: *Build,
+    target: Build.ResolvedTarget,
+    optimize: OptimizeMode,
+    data_locs: []const u8,
+    global_steps: bool,
+) *Compile {
+    const pico_sdk = b.dependency("pico-sdk", .{});
+    const picotool_src = b.dependency("picotool", .{});
     const libusb = b.dependency("libusb", .{
         .target = target,
-        .optimize = b.option(
-            std.builtin.OptimizeMode,
-            "optimize-libusb",
-            "optimize mode for libusb, defaults to ReleaseFast",
-        ) orelse std.builtin.OptimizeMode.ReleaseFast,
+        .optimize = optimize,
         .@"system-libudev" = false,
     });
+
     const binh = b.addExecutable(.{
         .name = "binh",
         .root_module = b.createModule(.{
@@ -84,16 +139,6 @@ pub fn build(b: *Build) void {
             .optimize = optimize,
         }),
     });
-    b.step("binh", "install binh binary").dependOn(
-        &b.addInstallArtifact(binh, .{}).step,
-    );
-
-    const picotool_src = b.dependency("picotool", .{});
-
-    const generate_headers = b.step(
-        "generate_headers",
-        "install the generated binh headers",
-    );
     const xip_ram_perms_elf_h = generate_binh(
         b,
         binh,
@@ -101,10 +146,6 @@ pub fn build(b: *Build) void {
         "xip_ram_perms_elf",
         "xip_ram_perms_elf.h",
     );
-    generate_headers.dependOn(&b.addInstallHeaderFile(
-        xip_ram_perms_elf_h,
-        "xip_ram_perms_elf.h",
-    ).step);
 
     const flash_id_bin_h = generate_binh(
         b,
@@ -113,22 +154,12 @@ pub fn build(b: *Build) void {
         "flash_id_bin",
         "flash_id_bin.h",
     );
-    generate_headers.dependOn(&b.addInstallHeaderFile(
-        flash_id_bin_h,
-        "flash_id_bin.h",
-    ).step);
-
-    const data_locs_opt = b.option(
-        []const u8,
-        "data-locs",
-        "semicolon separated runtime data locations",
-    ) orelse "./;/usr/local/share/picotool";
 
     const data_locs_vec = b.fmt("{f}", .{
-        DataLocsFmt.fmt(data_locs_opt),
+        DataLocsFmt.fmt(data_locs),
     });
 
-    const data_locs = b.addConfigHeader(.{
+    const data_locs_h = b.addConfigHeader(.{
         .style = .{ .cmake = picotool_src.path("data_locs.template.cpp") },
         .include_path = "data_locs.cpp",
     }, .{
@@ -234,7 +265,7 @@ pub fn build(b: *Build) void {
     });
 
     picotool.addCSourceFile(.{
-        .file = data_locs.getOutputFile(),
+        .file = data_locs_h.getOutputFile(),
         .flags = &cppflags,
     });
     picotool.addCSourceFiles(.{
@@ -275,6 +306,28 @@ pub fn build(b: *Build) void {
     picotool.linkLibrary(liboofatfs);
     picotool.linkLibrary(liblittlefs);
 
+    const generate_headers = generate_headers: {
+        if (global_steps) {
+            b.step("binh", "install binh binary").dependOn(
+                &b.addInstallArtifact(binh, .{}).step,
+            );
+            const generate_headers = b.step(
+                "generate_headers",
+                "install the generated binh headers",
+            );
+            generate_headers.dependOn(&b.addInstallHeaderFile(
+                xip_ram_perms_elf_h,
+                "xip_ram_perms_elf.h",
+            ).step);
+            generate_headers.dependOn(&b.addInstallHeaderFile(
+                flash_id_bin_h,
+                "flash_id_bin.h",
+            ).step);
+            break :generate_headers generate_headers;
+        }
+        break :generate_headers null;
+    };
+
     inline for (&.{
         "rp2350_a2_rom_end",
         "rp2350_a3_rom_end",
@@ -288,10 +341,12 @@ pub fn build(b: *Build) void {
             bin_h_name,
             model_h_name,
         );
-        generate_headers.dependOn(&b.addInstallHeaderFile(
-            model_h,
-            model_h_name,
-        ).step);
+        if (generate_headers) |gh| {
+            gh.dependOn(&b.addInstallHeaderFile(
+                model_h,
+                model_h_name,
+            ).step);
+        }
         picotool.addIncludePath(model_h.dirname());
         elf2uf2.addIncludePath(model_h.dirname());
     }
@@ -327,18 +382,8 @@ pub fn build(b: *Build) void {
         const pico_sdk_path = pico_sdk.path(include_path);
         picotool.addIncludePath(pico_sdk_path);
     }
-    b.installArtifact(picotool_exe);
 
-    const run_picotool = b.addRunArtifact(picotool_exe);
-    passthroughArgs(b, run_picotool);
-    run_step.dependOn(&run_picotool.step);
-
-    const udev_rules = b.addInstallFile(
-        picotool_src.path("udev/60-picotool.rules"),
-        "etc/udev/rules.d/60-picotool.rules",
-    );
-    b.getInstallStep().dependOn(&udev_rules.step);
-    b.step("udev", "install the raspberry udev rules").dependOn(&udev_rules.step);
+    return picotool_exe;
 }
 
 pub const DataLocsFmt = struct {

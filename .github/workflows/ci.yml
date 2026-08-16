@@ -21,9 +21,9 @@ jobs:
         uses: mlugg/setup-zig@v2.0.5
 
       - name: Run `build`
-        run: zig build -Dtarget=x86_64-linux-musl
+        run: zig build ci -Doptimize=ReleaseSafe
 
       - uses: actions/upload-artifact@v4
         with:
           name: picotool
-          path: zig-out/bin/*
+          path: zig-out/*
