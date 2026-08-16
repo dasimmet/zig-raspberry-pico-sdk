@@ -9,7 +9,6 @@
             .hash = "N-V-__8AAJZDcwFLNdIEF1wutjiH14f8fSET5jNORZIZKCaM",
         },
         .picotool = .{
-            .lazy = true,
             .url = "git+https://github.com/raspberrypi/picotool.git?ref=2.2.0-a4#25aa087b2c517b4901874a99536e869d4d27b678",
             .hash = "N-V-__8AACmfQwA3qa6G5rHENHJ6SLwK_SrQPQMxFoYzKWnd",
         },
