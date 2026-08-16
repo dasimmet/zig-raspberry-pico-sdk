@@ -1,12 +1,17 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const build_zon = @import("build.zig.zon");
+const Build = std.Build;
+const LazyPath = Build.LazyPath;
+const Run = Build.Step.Run;
+const Compile = Build.Step.Compile;
+const OptimizeMode = std.builtin.OptimizeMode;
 
 const pico_sdk_version = build_zon.version;
 
 pub const LoadOptions = struct {
     // firmware file to load
-    firmware: std.Build.LazyPath,
+    firmware: LazyPath,
     // try rebooting into BOOTSEL before flashing
     force: bool = false,
     // reboot into program after flashing
@@ -21,9 +26,9 @@ pub const LoadOptions = struct {
 };
 
 // load a firmware file to the default raspi pico found connected on usb
-pub fn load(b: *std.Build, opt: LoadOptions, args: anytype) *std.Build.Step.Run {
+pub fn load(b: *Build, opt: LoadOptions, args: anytype) *Run {
     const this_dep = b.dependencyFromBuildZig(@This(), args);
-    const flash_step = std.Build.Step.Run.create(b, "picotool");
+    const flash_step = Run.create(b, "picotool");
     if (opt.sudo) {
         flash_step.addArg("sudo");
     }
@@ -52,7 +57,7 @@ pub fn load(b: *std.Build, opt: LoadOptions, args: anytype) *std.Build.Step.Run 
     return flash_step;
 }
 
-pub fn build(b: *std.Build) void {
+pub fn build(b: *Build) void {
     const run_step = b.step("run", "run picotool");
 
     const target = b.standardTargetOptions(.{});
@@ -68,7 +73,7 @@ pub fn build(b: *std.Build) void {
             std.builtin.OptimizeMode,
             "optimize-libusb",
             "optimize mode for libusb, defaults to ReleaseFast",
-        ) orelse .ReleaseFast,
+        ) orelse std.builtin.OptimizeMode.ReleaseFast,
         .@"system-libudev" = false,
     });
     const binh = b.addExecutable(.{
@@ -357,6 +362,7 @@ pub const DataLocsFmt = struct {
 
 pub const cppflags = .{
     "-std=c++23",
+    "-fuse-cxa-atexit",
 } ++ commonflags;
 
 pub const cflags = .{
@@ -372,15 +378,16 @@ pub const commonflags = .{
     "-Wextra",
     "-g",
     "-Werror",
-    "-Wno-error=missing-field-initializers",
     "-Wno-error=delete-non-abstract-non-virtual-dtor",
     "-Wno-error=enum-enum-conversion",
     "-Wno-error=format",
+    "-Wno-error=missing-field-initializers",
     "-Wno-error=newline-eof",
     "-Wno-error=reorder",
     "-Wno-error=sign-compare",
     "-Wno-error=unsequenced",
     "-Wno-error=unused-but-set-variable",
+    "-Wno-error=unused-command-line-argument",
     "-Wno-error=unused-const-variable",
     "-Wno-error=unused-function",
     "-Wno-error=unused-parameter",
@@ -389,12 +396,12 @@ pub const commonflags = .{
 };
 
 pub fn generate_binh(
-    b: *std.Build,
-    binh: *std.Build.Step.Compile,
-    input: std.Build.LazyPath,
+    b: *Build,
+    binh: *Compile,
+    input: LazyPath,
     name: []const u8,
     out_basename: []const u8,
-) std.Build.LazyPath {
+) LazyPath {
     const run_step = b.addRunArtifact(binh);
     run_step.addFileArg(input);
     run_step.addArg(name);
@@ -402,7 +409,7 @@ pub fn generate_binh(
 }
 
 // zig 0.17.0 and 0.16.0 compatible args passthrough function
-inline fn passthroughArgs(b: *std.Build, run: *std.Build.Step.Run) void {
+inline fn passthroughArgs(b: *Build, run: *Run) void {
     if (comptime @import("builtin").zig_version.order(std.SemanticVersion.parse("0.16.0") catch unreachable) == .gt) {
         run.addPassthruArgs();
     } else {
