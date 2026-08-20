@@ -9,54 +9,6 @@ const OptimizeMode = std.builtin.OptimizeMode;
 
 const pico_sdk_version = build_zon.version;
 
-pub const LoadOptions = struct {
-    // firmware file to load
-    firmware: LazyPath,
-    // try rebooting into BOOTSEL before flashing
-    force: bool = false,
-    // reboot into program after flashing
-    execute: bool = false,
-    // use sudo if usb device is requires elevated permissions
-    sudo: bool = false,
-    // device-selection
-    bus: ?[]const u8 = null,
-    address: ?[]const u8 = null,
-    vid: ?[]const u8 = null,
-    pid: ?[]const u8 = null,
-};
-
-// load a firmware file to the default raspi pico found connected on usb
-pub fn load(b: *Build, opt: LoadOptions, args: anytype) *Run {
-    const this_dep = b.dependencyFromBuildZig(@This(), args);
-    const flash_step = Run.create(b, "picotool");
-    if (opt.sudo) {
-        flash_step.addArg("sudo");
-    }
-    flash_step.addFileArg(this_dep.artifact("picotool"));
-    flash_step.addArg("load");
-    flash_step.addFileArg(opt.firmware);
-
-    if (opt.force) {
-        flash_step.addArg("--force");
-    }
-    if (opt.execute) {
-        flash_step.addArg("--execute");
-    }
-    if (opt.bus) |bus| {
-        flash_step.addArgs(&.{ "--bus", bus });
-    }
-    if (opt.address) |address| {
-        flash_step.addArgs(&.{ "--address", address });
-    }
-    if (opt.vid) |vid| {
-        flash_step.addArgs(&.{ "--vid", vid });
-    }
-    if (opt.pid) |pid| {
-        flash_step.addArgs(&.{ "--pid", pid });
-    }
-    return flash_step;
-}
-
 pub fn build(b: *Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -291,9 +243,10 @@ fn buildWithOptions(
         .flags = &cflags,
     });
 
+    const pico_sdk_version_escaped = b.fmt("\"{s}\"", .{pico_sdk_version});
     inline for (.{
-        .{ "SYSTEM_VERSION", "\"" ++ pico_sdk_version ++ "\"" },
-        .{ "PICOTOOL_VERSION", "\"" ++ pico_sdk_version ++ "\"" },
+        .{ "SYSTEM_VERSION", pico_sdk_version_escaped },
+        .{ "PICOTOOL_VERSION", pico_sdk_version_escaped },
         .{ "COMPILER_INFO", "\"zig-" ++ builtin.zig_version_string ++ "\"" },
         .{ "_CLANG_DISABLE_CRT_DEPRECATION_WARNINGS", "1" },
     }) |macro| {

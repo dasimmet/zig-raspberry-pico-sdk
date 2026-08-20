@@ -1,4 +1,4 @@
-# raspberry Picotool on the zig buildsystem
+# raspberry picotool on the zig buildsystem
 
 ## Requirements
 
@@ -7,6 +7,11 @@
 ## Picotool
 
 this repo builds the raspberry picotool from the sdk source on the zig buildsystem:
+
+```console
+foo@bar:~$ zig build run -- version
+picotool v2.3.0 (2.3.0, zig-0.16.0)
+```
 
 ```console
 foo@bar:~$ zig build run
@@ -55,17 +60,4 @@ COMMANDS:
     bdev        Commands related to embedded block devices
 
 Use "picotool help <cmd>" for more info
-```
-
-## Picotool zig build interface
-
-```zig
-// build.zig
-const pico_sdk = @import("zig-raspberry-pico-sdk");
-const load_step = pico_sdk.load(b, .{
-    .firmware = lazypath_to_firmware_uf2,
-    .execute = true,
-    .sudo = b.option(bool, "load-with-sudo", "run picotool load with sudo") orelse false,
-}, .{});
-b.step("load").dependOn(load_step);
 ```

@@ -25,5 +25,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: picotool
+          name: picotool.zip
           path: zig-out/*
